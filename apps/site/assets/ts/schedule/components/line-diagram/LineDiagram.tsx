@@ -1,4 +1,5 @@
 import React, { ReactElement, useState } from "react";
+import { useInterval } from "use-interval";
 import { useFetch } from "react-async";
 
 import {
@@ -91,7 +92,12 @@ const LineDiagram = ({
     modalOpen: false
   });
 
-  const { data: maybeLiveData } = useFetch(
+  const {
+    data: maybeLiveData,
+    isLoading: liveDataIsLoading,
+    // @ts-ignore https://github.com/async-library/react-async/issues/244
+    reload: reloadLiveData
+  } = useFetch(
     `/schedules/line_api/predictions_and_vehicles?id=${
       route.id
     }&direction_id=${directionId}`,
@@ -99,6 +105,12 @@ const LineDiagram = ({
     { json: true, watch: directionId }
   );
   const liveData = (maybeLiveData || {}) as LiveDataByStop;
+
+  useInterval(() => {
+    requestAnimationFrame(() => {
+      if (!liveDataIsLoading) reloadLiveData();
+    });
+  }, 15000);
 
   const handleStopClick = (stop: RouteStop): void =>
     setModalState({
